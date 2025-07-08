@@ -1,6 +1,5 @@
 intf_libs = # Interface dependencies.
 impl_libs = # Implementation dependencies.
-#import xxxx_libs += libhello%lib{hello}
 
 # Public headers.
 #
@@ -26,8 +25,11 @@ src_pfx_src = [dir_path] $src_root/src/
 c.poptions =+ "-I$out_pfx_src" "-I$src_pfx_src" \
               "-I$out_pfx_inc" "-I$src_pfx_inc"
 
-#obja{*}: c.poptions += -DZYCORE_STATIC_BUILD
-#objs{*}: c.poptions += -DZYCORE_SHARED_BUILD
+if ($c.target.class == 'linux')
+  c.poptions += -D_GNU_SOURCE
+
+obja{*}: c.poptions += -DZYCORE_STATIC_BUILD
+objs{*}: c.poptions += -DZYCORE_SHOULD_EXPORT
 
 # Export options.
 #
