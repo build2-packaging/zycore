@@ -13,7 +13,18 @@ lib{zycore}: $pub/{$pub_hdrs}
 
 # Private headers and sources as well as dependencies.
 #
-lib{zycore}: {h c}{**} $impl_libs $intf_libs
+lib{zycore}: libul{zycore}: {h c}{**} $impl_libs $intf_libs
+
+# Zycore only defines ZYAN_DLLEXPORT as __declspec(dllexport) when ZYAN_MSVC is
+# defined. However, in some cases we may be using a different compiler such as
+# Clang on Windows. Here, symbol export will fail because ZYAN_DLLEXPORT remains
+# undefined or expands to nothing.
+#
+# To work around this, we auto export symbols when compiling with Clang on
+# Windows.
+#
+libs{zycore}: def{zycore}: include = ($c.target.system == 'win32-msvc')
+              def{zycore}: libul{zycore}
 
 # Build options.
 #
@@ -27,6 +38,9 @@ c.poptions =+ "-I$out_pfx_src" "-I$src_pfx_src" \
 
 if ($c.target.class == 'linux')
   c.poptions += -D_GNU_SOURCE
+
+if ($c.id == 'clang')
+  cxx.loptions += -Wl,--export-all-symbols
 
 obja{*}: c.poptions += -DZYCORE_STATIC_BUILD
 objs{*}: c.poptions += -DZYCORE_SHOULD_EXPORT
@@ -49,8 +63,8 @@ if ($c.target.class != 'windows')
   }
 }
 
-#liba{zycore}: c.export.poptions += -DZYCORE_STATIC
-#libs{zycore}: c.export.poptions += -DZYCORE_SHARED
+liba{zycore}: c.export.poptions += -DZYCORE_STATIC_BUILD
+libs{zycore}: c.export.poptions += -DZYCORE_SHOULD_EXPORT
 
 # For pre-releases use the complete version to make sure they cannot
 # be used in place of another pre-release or the final version. See

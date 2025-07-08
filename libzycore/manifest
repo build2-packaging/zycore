@@ -13,3 +13,5 @@ email: packaging@build2.org ; Mailing list.
 depends: * build2 >= 0.17.0
 depends: * bpkg >= 0.17.0
 tests: libzycore-tests == $
+
+build-exclude: x86_64-microsoft-win32-msvc14.0 ; Missing <string_view>
