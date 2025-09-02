@@ -15,16 +15,35 @@ lib{zycore}: $pub/{$pub_hdrs}
 #
 lib{zycore}: libul{zycore}: {h c}{**} $impl_libs $intf_libs
 
-# Zycore only defines ZYAN_DLLEXPORT as __declspec(dllexport) when ZYAN_MSVC is
-# defined. However, in some cases we may be using a different compiler such as
-# Clang on Windows. Here, symbol export will fail because ZYAN_DLLEXPORT remains
-# undefined or expands to nothing.
+# Symbol export configuration
 #
-# To work around this, we auto export symbols when compiling with Clang on
-# Windows.
+# On Windows, dynamic libraries require explicit annotation of exported symbols.
+# build2 supports two main strategies to automate this, depending on the
+# toolchain:
+#
+# https://build2.org/build2/doc/build2-build-system-manual.xhtml#cc-auto-symexport
+#
+# 1. MSVC (win32-msvc target): we rely on a definition file (def{}). build2
+#    automatically generates the .def export list, which is then passed to the
+#    linker. This avoids the need for `__declspec(dllexport)` annotations in the
+#    source code.
+#
+# 2. GNU-style toolchains targeting Windows (MinGW, Clang/LLVM with COFF): we
+#    instead request the linker to export all symbols from the object files.
+#    This is done by passing `-Wl,--export-all-symbols`.
+#
+# Note that both approaches are mutually exclusive and selected based on
+# `$c.target.system`/`$c.id`. Other platforms ignore this configuration.
 #
 libs{zycore}: def{zycore}: include = ($c.target.system == 'win32-msvc')
               def{zycore}: libul{zycore}
+
+# Use linker-based automatic export for GNU-style toolchains on Windows
+#
+if ($c.target.system == 'mingw32' || \
+    ($c.target.class == 'windows' && $c.id == 'clang' \
+                                  && $c.target.system != 'win32-msvc'))
+  c.loptions += -Wl,--export-all-symbols
 
 # Build options.
 #
@@ -39,11 +58,8 @@ c.poptions =+ "-I$out_pfx_src" "-I$src_pfx_src" \
 if ($c.target.class == 'linux')
   c.poptions += -D_GNU_SOURCE
 
-if ($c.id == 'clang')
-  cxx.loptions += -Wl,--export-all-symbols
-
 obja{*}: c.poptions += -DZYCORE_STATIC_BUILD
-objs{*}: c.poptions += -DZYCORE_SHOULD_EXPORT
+objs{*}: c.poptions += -DZYCORE_STATIC_BUILD
 
 # Export options.
 #
@@ -64,7 +80,7 @@ if ($c.target.class != 'windows')
 }
 
 liba{zycore}: c.export.poptions += -DZYCORE_STATIC_BUILD
-libs{zycore}: c.export.poptions += -DZYCORE_SHOULD_EXPORT
+libs{zycore}: c.export.poptions += -DZYCORE_STATIC_BUILD
 
 # For pre-releases use the complete version to make sure they cannot
 # be used in place of another pre-release or the final version. See
