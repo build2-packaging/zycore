@@ -1,0 +1,8 @@
+: 1
+name: libzycore
+version: 1.5.1+1
+language: c
+project: zycore
+summary: Platform-independent types, macros, and fallbacks for environments\
+ without LibC.
+license: MIT
