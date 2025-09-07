@@ -1,6 +1,6 @@
 : 1
 name: libzycore-tests
-version: 1.5.1
+version: 1.5.1+1
 type: exe
 language: c++
 project: zycore
